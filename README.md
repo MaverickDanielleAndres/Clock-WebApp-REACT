@@ -13,7 +13,7 @@ A sleek and user-friendly clock application built with React. This app provides 
 
 ## Screenshots
 
-![Clock App Screenshot](<img width="1159" height="888" alt="image" src="https://github.com/user-attachments/assets/d2d94664-8955-4214-9581-f9c7f2a9d956" />)
+<img width="1159" height="888" alt="image" src="https://github.com/user-attachments/assets/d2d94664-8955-4214-9581-f9c7f2a9d956" />
 
 ## Technologies Used
 
@@ -22,7 +22,7 @@ A sleek and user-friendly clock application built with React. This app provides 
 - **Styling**: CSS3 (or any styling library you used, e.g., Tailwind CSS)
 
 
-- Contact
+## Contact
 Feel free to reach out if you have any questions or feedback:
 
 Email: maverickdanielle@gmail.com
