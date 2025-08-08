@@ -1,0 +1,1543 @@
+package.json
+{
+  "name": "clock-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.263.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.0.3",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "vite": "^4.4.5"
+  }
+}
+
+
+
+src/main.jsx
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+
+
+
+
+src/index.css
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transition: all 0.3s ease;
+}
+
+body.dark {
+  background: linear-gradient(135deg, #232526 0%, #414345 100%);
+}
+
+#root {
+  width: 100%;
+  max-width: 100vw;
+  margin: 0 auto;
+  text-align: center;
+}
+
+
+
+
+
+src/components/ThemeContext.jsx
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+const ThemeContext = createContext();
+
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+};
+
+export const ThemeProvider = ({ children }) => {
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('theme', JSON.stringify(isDark));
+    document.body.className = isDark ? 'dark' : '';
+  }, [isDark]);
+
+  const toggleTheme = () => {
+    setIsDark(prev => !prev);
+  };
+
+  return (
+    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+};
+
+
+
+
+
+src/components/Clock.jsx
+import React, { useState, useEffect } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
+
+const Clock = () => {
+  const [time, setTime] = useState(new Date());
+  const { isDark } = useTheme();
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getRotation = (unit, max) => {
+    return (unit / max) * 360;
+  };
+
+  const hours = time.getHours() % 12;
+  const minutes = time.getMinutes();
+  const seconds = time.getSeconds();
+
+  const hourRotation = getRotation(hours + minutes / 60, 12);
+  const minuteRotation = getRotation(minutes + seconds / 60, 60);
+  const secondRotation = getRotation(seconds, 60);
+
+  const clockStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '2rem',
+    padding: '2rem',
+    backgroundColor: isDark ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    borderRadius: '20px',
+    backdropFilter: 'blur(10px)',
+    boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(31, 38, 135, 0.37)',
+    border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.18)'}`,
+    color: isDark ? '#ffffff' : '#333333',
+    transition: 'all 0.3s ease'
+  };
+
+  const analogClockStyle = {
+    position: 'relative',
+    width: '200px',
+    height: '200px',
+    borderRadius: '50%',
+    background: `conic-gradient(from 0deg, ${isDark ? '#4c1d95' : '#667eea'}, ${isDark ? '#7c2d12' : '#764ba2'}, ${isDark ? '#4c1d95' : '#667eea'})`,
+    padding: '20px',
+    boxShadow: isDark ? 'inset 0 0 20px rgba(0, 0, 0, 0.5)' : 'inset 0 0 20px rgba(0, 0, 0, 0.1)',
+  };
+
+  const clockFaceStyle = {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+    borderRadius: '50%',
+    backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
+    boxShadow: isDark ? '0 0 20px rgba(0, 0, 0, 0.8)' : '0 0 20px rgba(0, 0, 0, 0.1)',
+  };
+
+  const handStyle = (rotation, length, width, color) => ({
+    position: 'absolute',
+    bottom: '50%',
+    left: '50%',
+    width: `${width}px`,
+    height: `${length}%`,
+    backgroundColor: color,
+    transformOrigin: 'bottom center',
+    transform: `translateX(-50%) rotate(${rotation}deg)`,
+    borderRadius: '2px',
+    boxShadow: '0 0 5px rgba(0, 0, 0, 0.3)'
+  });
+
+  const centerDotStyle = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: '12px',
+    height: '12px',
+    borderRadius: '50%',
+    backgroundColor: isDark ? '#ff6b6b' : '#e74c3c',
+    transform: 'translate(-50%, -50%)',
+    zIndex: 10,
+    boxShadow: '0 0 10px rgba(0, 0, 0, 0.3)'
+  };
+
+  const digitalTimeStyle = {
+    fontSize: '3.5rem',
+    fontWeight: '300',
+    fontFamily: 'monospace',
+    background: `linear-gradient(45deg, ${isDark ? '#ff6b6b' : '#667eea'}, ${isDark ? '#4ecdc4' : '#764ba2'})`,
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    letterSpacing: '0.1em'
+  };
+
+  const dateStyle = {
+    fontSize: '1.2rem',
+    fontWeight: '400',
+    opacity: 0.8,
+    marginTop: '0.5rem'
+  };
+
+  const numberStyle = (number) => ({
+    position: 'absolute',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    color: isDark ? '#ffffff' : '#333333',
+    transform: 'translate(-50%, -50%)',
+    ...getNumberPosition(number)
+  });
+
+  const getNumberPosition = (number) => {
+    const angle = (number * 30 - 90) * (Math.PI / 180);
+    const radius = 75;
+    const x = 50 + radius * Math.cos(angle);
+    const y = 50 + radius * Math.sin(angle);
+    return {
+      left: `${x}%`,
+      top: `${y}%`
+    };
+  };
+
+  return (
+    <div style={clockStyle}>
+      <div style={analogClockStyle}>
+        <div style={clockFaceStyle}>
+          {/* Numbers */}
+          {[...Array(12)].map((_, i) => (
+            <div key={i + 1} style={numberStyle(i + 1)}>
+              {i + 1}
+            </div>
+          ))}
+          
+          {/* Hour marks */}
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={`mark-${i}`}
+              style={{
+                position: 'absolute',
+                width: '2px',
+                height: '15px',
+                backgroundColor: isDark ? '#666' : '#ccc',
+                left: '50%',
+                top: '5px',
+                transformOrigin: '50% 95px',
+                transform: `translateX(-50%) rotate(${i * 30}deg)`
+              }}
+            />
+          ))}
+
+          {/* Hour hand */}
+          <div style={handStyle(hourRotation, 25, 4, isDark ? '#ff6b6b' : '#e74c3c')} />
+          
+          {/* Minute hand */}
+          <div style={handStyle(minuteRotation, 35, 3, isDark ? '#4ecdc4' : '#3498db')} />
+          
+          {/* Second hand */}
+          <div style={handStyle(secondRotation, 40, 1, isDark ? '#f39c12' : '#f39c12')} />
+          
+          {/* Center dot */}
+          <div style={centerDotStyle} />
+        </div>
+      </div>
+      
+      <div>
+        <div style={digitalTimeStyle}>{formatTime(time)}</div>
+        <div style={dateStyle}>{formatDate(time)}</div>
+      </div>
+    </div>
+  );
+};
+
+export default Clock;
+
+
+
+
+src/components/Timer.jsx
+import React, { useState, useEffect, useRef } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
+import { Play, Pause, Square, RotateCcw } from 'lucide-react';
+
+const Timer = () => {
+  const [time, setTime] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  const [totalSeconds, setTotalSeconds] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const intervalRef = useRef(null);
+  const audioRef = useRef(null);
+  const { isDark } = useTheme();
+
+  useEffect(() => {
+    // Create audio for alarm
+    audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBzemzfPXgjMGHm7A7+OZURE');
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isRunning && timeLeft > 0) {
+      intervalRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            setIsRunning(false);
+            playAlarm();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isRunning, timeLeft]);
+
+  const playAlarm = () => {
+    if (audioRef.current) {
+      audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+    }
+    // Visual notification
+    document.title = '⏰ Timer Finished!';
+    setTimeout(() => {
+      document.title = 'Clock App';
+    }, 5000);
+  };
+
+  const handleInputChange = (field, value) => {
+    const numValue = Math.max(0, Math.min(59, parseInt(value) || 0));
+    if (field === 'hours') {
+      setTime(prev => ({ ...prev, hours: Math.min(23, numValue) }));
+    } else {
+      setTime(prev => ({ ...prev, [field]: numValue }));
+    }
+  };
+
+  const startTimer = () => {
+    if (totalSeconds === 0) {
+      const total = time.hours * 3600 + time.minutes * 60 + time.seconds;
+      if (total > 0) {
+        setTotalSeconds(total);
+        setTimeLeft(total);
+        setIsRunning(true);
+      }
+    } else {
+      setIsRunning(true);
+    }
+  };
+
+  const pauseTimer = () => {
+    setIsRunning(false);
+  };
+
+  const resetTimer = () => {
+    setIsRunning(false);
+    setTimeLeft(0);
+    setTotalSeconds(0);
+    setTime({ hours: 0, minutes: 0, seconds: 0 });
+  };
+
+  const formatTime = (seconds) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const progress = totalSeconds > 0 ? ((totalSeconds - timeLeft) / totalSeconds) * 100 : 0;
+
+  const containerStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '2rem',
+    padding: '2rem',
+    backgroundColor: isDark ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    borderRadius: '20px',
+    backdropFilter: 'blur(10px)',
+    boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(31, 38, 135, 0.37)',
+    border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.18)'}`,
+    color: isDark ? '#ffffff' : '#333333',
+    minWidth: '350px',
+    transition: 'all 0.3s ease'
+  };
+
+  const inputContainerStyle = {
+    display: 'flex',
+    gap: '1rem',
+    alignItems: 'center',
+    marginBottom: '1rem'
+  };
+
+  const inputGroupStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.5rem'
+  };
+
+  const inputStyle = {
+    width: '60px',
+    padding: '0.5rem',
+    borderRadius: '8px',
+    border: `2px solid ${isDark ? '#4a5568' : '#e2e8f0'}`,
+    backgroundColor: isDark ? '#2d3748' : '#ffffff',
+    color: isDark ? '#ffffff' : '#333333',
+    textAlign: 'center',
+    fontSize: '1.2rem',
+    fontWeight: 'bold',
+    outline: 'none',
+    transition: 'all 0.3s ease'
+  };
+
+  const labelStyle = {
+    fontSize: '0.8rem',
+    fontWeight: '500',
+    opacity: 0.7,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em'
+  };
+
+  const displayStyle = {
+    fontSize: '4rem',
+    fontFamily: 'monospace',
+    fontWeight: '300',
+    background: `linear-gradient(45deg, ${isDark ? '#ff6b6b' : '#667eea'}, ${isDark ? '#4ecdc4' : '#764ba2'})`,
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    textAlign: 'center',
+    letterSpacing: '0.1em'
+  };
+
+  const progressBarStyle = {
+    width: '100%',
+    height: '8px',
+    backgroundColor: isDark ? '#4a5568' : '#e2e8f0',
+    borderRadius: '4px',
+    overflow: 'hidden',
+    margin: '1rem 0'
+  };
+
+  const progressFillStyle = {
+    height: '100%',
+    backgroundColor: isDark ? '#4ecdc4' : '#667eea',
+    borderRadius: '4px',
+    transition: 'width 1s linear',
+    width: `${progress}%`
+  };
+
+  const buttonContainerStyle = {
+    display: 'flex',
+    gap: '1rem',
+    marginTop: '1rem'
+  };
+
+  const buttonStyle = (variant = 'primary') => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    padding: '0.75rem 1.5rem',
+    borderRadius: '12px',
+    border: 'none',
+    fontSize: '1rem',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    backgroundColor: variant === 'primary' 
+      ? (isDark ? '#4ecdc4' : '#667eea')
+      : variant === 'danger'
+      ? (isDark ? '#ff6b6b' : '#e74c3c')
+      : (isDark ? '#4a5568' : '#718096'),
+    color: '#ffffff',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+    transform: 'translateY(0)',
+    ':hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 6px 16px rgba(0, 0, 0, 0.2)'
+    }
+  });
+
+  return (
+    <div style={containerStyle}>
+      <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Timer</h2>
+      
+      {!isRunning && timeLeft === 0 && (
+        <div style={inputContainerStyle}>
+          <div style={inputGroupStyle}>
+            <input
+              type="number"
+              min="0"
+              max="23"
+              value={time.hours}
+              onChange={(e) => handleInputChange('hours', e.target.value)}
+              style={inputStyle}
+            />
+            <span style={labelStyle}>Hours</span>
+          </div>
+          <span style={{ fontSize: '2rem', opacity: 0.5 }}>:</span>
+          <div style={inputGroupStyle}>
+            <input
+              type="number"
+              min="0"
+              max="59"
+              value={time.minutes}
+              onChange={(e) => handleInputChange('minutes', e.target.value)}
+              style={inputStyle}
+            />
+            <span style={labelStyle}>Minutes</span>
+          </div>
+          <span style={{ fontSize: '2rem', opacity: 0.5 }}>:</span>
+          <div style={inputGroupStyle}>
+            <input
+              type="number"
+              min="0"
+              max="59"
+              value={time.seconds}
+              onChange={(e) => handleInputChange('seconds', e.target.value)}
+              style={inputStyle}
+            />
+            <span style={labelStyle}>Seconds</span>
+          </div>
+        </div>
+      )}
+      
+      {timeLeft > 0 && (
+        <>
+          <div style={displayStyle}>
+            {formatTime(timeLeft)}
+          </div>
+          <div style={progressBarStyle}>
+            <div style={progressFillStyle}></div>
+          </div>
+        </>
+      )}
+      
+      <div style={buttonContainerStyle}>
+        {!isRunning ? (
+          <button
+            onClick={startTimer}
+            style={buttonStyle('primary')}
+            disabled={timeLeft === 0 && time.hours === 0 && time.minutes === 0 && time.seconds === 0}
+          >
+            <Play size={20} />
+            Start
+          </button>
+        ) : (
+          <button
+            onClick={pauseTimer}
+            style={buttonStyle('secondary')}
+          >
+            <Pause size={20} />
+            Pause
+          </button>
+        )}
+        
+        <button
+          onClick={resetTimer}
+          style={buttonStyle('danger')}
+        >
+          <RotateCcw size={20} />
+          Reset
+        </button>
+      </div>
+      
+      {timeLeft === 0 && totalSeconds > 0 && (
+        <div style={{
+          padding: '1rem',
+          backgroundColor: isDark ? '#ff6b6b' : '#e74c3c',
+          color: '#ffffff',
+          borderRadius: '8px',
+          fontWeight: 'bold',
+          animation: 'pulse 1s infinite'
+        }}>
+          ⏰ Timer Finished!
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Timer;
+
+
+
+
+
+src/components/Stopwatch.jsx
+import React, { useState, useEffect, useRef } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
+import { Play, Pause, Square, RotateCcw, Flag } from 'lucide-react';
+
+const Stopwatch = () => {
+  const [time, setTime] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [laps, setLaps] = useState([]);
+  const intervalRef = useRef(null);
+  const { isDark } = useTheme();
+
+  useEffect(() => {
+    if (isRunning) {
+      intervalRef.current = setInterval(() => {
+        setTime(prevTime => prevTime + 10);
+      }, 10);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isRunning]);
+
+  const formatTime = (time) => {
+    const totalSeconds = Math.floor(time / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const milliseconds = Math.floor((time % 1000) / 10);
+    
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
+  };
+
+  const start = () => {
+    setIsRunning(true);
+  };
+
+  const pause = () => {
+    setIsRunning(false);
+  };
+
+  const reset = () => {
+    setIsRunning(false);
+    setTime(0);
+    setLaps([]);
+  };
+
+  const addLap = () => {
+    if (time > 0) {
+      const lapTime = time;
+      const lapNumber = laps.length + 1;
+      const previousLapTime = laps.length > 0 ? laps[laps.length - 1].time : 0;
+      const splitTime = lapTime - previousLapTime;
+      
+      setLaps(prev => [...prev, {
+        number: lapNumber,
+        time: lapTime,
+        split: splitTime,
+        formatted: formatTime(lapTime),
+        splitFormatted: formatTime(splitTime)
+      }]);
+    }
+  };
+
+  const containerStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '2rem',
+    padding: '2rem',
+    backgroundColor: isDark ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    borderRadius: '20px',
+    backdropFilter: 'blur(10px)',
+    boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(31, 38, 135, 0.37)',
+    border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.18)'}`,
+    color: isDark ? '#ffffff' : '#333333',
+    minWidth: '400px',
+    maxWidth: '500px',
+    transition: 'all 0.3s ease'
+  };
+
+  const displayStyle = {
+    fontSize: '4rem',
+    fontFamily: 'monospace',
+    fontWeight: '300',
+    background: `linear-gradient(45deg, ${isDark ? '#ff6b6b' : '#667eea'}, ${isDark ? '#4ecdc4' : '#764ba2'})`,
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    textAlign: 'center',
+    letterSpacing: '0.1em',
+    margin: '1rem 0'
+  };
+
+  const buttonContainerStyle = {
+    display: 'flex',
+    gap: '1rem',
+    marginBottom: '1rem'
+  };
+
+  const buttonStyle = (variant = 'primary') => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    padding: '0.75rem 1.5rem',
+    borderRadius: '12px',
+    border: 'none',
+    fontSize: '1rem',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    backgroundColor: variant === 'primary' 
+      ? (isDark ? '#4ecdc4' : '#667eea')
+      : variant === 'danger'
+      ? (isDark ? '#ff6b6b' : '#e74c3c')
+      : variant === 'success'
+      ? (isDark ? '#51cf66' : '#38a169')
+      : (isDark ? '#4a5568' : '#718096'),
+    color: '#ffffff',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+    transform: 'translateY(0)',
+    ':hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 6px 16px rgba(0, 0, 0, 0.2)'
+    }
+  });
+
+  const lapContainerStyle = {
+    width: '100%',
+    maxHeight: '300px',
+    overflowY: 'auto',
+    borderRadius: '12px',
+    backgroundColor: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.05)',
+    padding: '1rem'
+  };
+
+  const lapItemStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0.75rem 1rem',
+    borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+    fontSize: '1rem',
+    fontFamily: 'monospace'
+  };
+
+  const lapHeaderStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0.5rem 1rem',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    borderRadius: '8px',
+    marginBottom: '0.5rem',
+    fontSize: '0.9rem',
+    fontWeight: 'bold',
+    opacity: 0.8
+  };
+
+  return (
+    <div style={containerStyle}>
+      <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Stopwatch</h2>
+      
+      <div style={displayStyle}>
+        {formatTime(time)}
+      </div>
+      
+      <div style={buttonContainerStyle}>
+        {!isRunning ? (
+          <button
+            onClick={start}
+            style={buttonStyle('primary')}
+          >
+            <Play size={20} />
+            Start
+          </button>
+        ) : (
+          <button
+            onClick={pause}
+            style={buttonStyle('secondary')}
+          >
+            <Pause size={20} />
+            Pause
+          </button>
+        )}
+        
+        <button
+          onClick={addLap}
+          style={buttonStyle('success')}
+          disabled={time === 0}
+        >
+          <Flag size={20} />
+          Lap
+        </button>
+        
+        <button
+          onClick={reset}
+          style={buttonStyle('danger')}
+        >
+          <RotateCcw size={20} />
+          Reset
+        </button>
+      </div>
+      
+      {laps.length > 0 && (
+        <div style={lapContainerStyle}>
+          <div style={lapHeaderStyle}>
+            <span>Lap</span>
+            <span>Split Time</span>
+            <span>Total Time</span>
+          </div>
+          {laps.slice().reverse().map((lap, index) => (
+            <div key={lap.number} style={lapItemStyle}>
+              <span style={{ fontWeight: 'bold' }}>#{lap.number}</span>
+              <span style={{ color: isDark ? '#4ecdc4' : '#667eea' }}>
+                {lap.splitFormatted}
+              </span>
+              <span>{lap.formatted}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Stopwatch;
+
+
+
+
+
+src/components/Alarm.jsx
+import React, { useState, useEffect, useRef } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
+import { Plus, Trash2, Bell, BellOff, Edit2, Save, X, Volume2 } from 'lucide-react';
+
+const Alarm = () => {
+  const [alarms, setAlarms] = useState([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [newAlarm, setNewAlarm] = useState({
+    time: '',
+    label: '',
+    days: [],
+    snooze: 5,
+    enabled: true,
+    sound: 'default'
+  });
+  const intervalRef = useRef(null);
+  const audioRef = useRef(null);
+  const { isDark } = useTheme();
+
+  const daysOfWeek = [
+    { key: 'sun', label: 'S' },
+    { key: 'mon', label: 'M' },
+    { key: 'tue', label: 'T' },
+    { key: 'wed', label: 'W' },
+    { key: 'thu', label: 'T' },
+    { key: 'fri', label: 'F' },
+    { key: 'sat', label: 'S' }
+  ];
+
+  const soundOptions = [
+    { value: 'default', label: 'Default' },
+    { value: 'gentle', label: 'Gentle' },
+    { value: 'loud', label: 'Loud' },
+    { value: 'nature', label: 'Nature' }
+  ];
+
+  useEffect(() => {
+    // Load alarms from localStorage
+    const savedAlarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+    setAlarms(savedAlarms);
+
+    // Create audio context
+    audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBzemzfPXgjMGHm7A7+OZURE');
+
+    // Check alarms every second
+    intervalRef.current = setInterval(checkAlarms, 1000);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // Save alarms to localStorage whenever alarms change
+    localStorage.setItem('alarms', JSON.stringify(alarms));
+  }, [alarms]);
+
+  const checkAlarms = () => {
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5);
+    const currentDay = daysOfWeek[now.getDay()].key;
+
+    alarms.forEach(alarm => {
+      if (alarm.enabled && alarm.time === currentTime) {
+        if (alarm.days.length === 0 || alarm.days.includes(currentDay)) {
+          triggerAlarm(alarm);
+        }
+      }
+    });
+  };
+
+  const triggerAlarm = (alarm) => {
+    // Play sound
+    if (audioRef.current) {
+      audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+    }
+    
+    // Show notification
+    if (Notification.permission === 'granted') {
+      new Notification(`Alarm: ${alarm.label || 'Untitled'}`, {
+        body: `Time: ${alarm.time}`,
+        icon: '⏰'
+      });
+    }
+    
+    // Update page title
+    document.title = `🔔 ${alarm.label || 'Alarm'} - ${alarm.time}`;
+    
+    // Show browser alert as fallback
+    alert(`🔔 Alarm: ${alarm.label || 'Untitled'}\nTime: ${alarm.time}`);
+  };
+
+  const requestNotificationPermission = () => {
+    if ('Notification' in window) {
+      Notification.requestPermission();
+    }
+  };
+
+  const addAlarm = () => {
+    if (newAlarm.time) {
+      const alarm = {
+        id: Date.now(),
+        ...newAlarm,
+        createdAt: new Date().toISOString()
+      };
+      setAlarms(prev => [...prev, alarm]);
+      setNewAlarm({
+        time: '',
+        label: '',
+        days: [],
+        snooze: 5,
+        enabled: true,
+        sound: 'default'
+      });
+      setShowAddForm(false);
+      requestNotificationPermission();
+    }
+  };
+
+  const deleteAlarm = (id) => {
+    setAlarms(prev => prev.filter(alarm => alarm.id !== id));
+  };
+
+  const toggleAlarm = (id) => {
+    setAlarms(prev => prev.map(alarm => 
+      alarm.id === id ? { ...alarm, enabled: !alarm.enabled } : alarm
+    ));
+  };
+
+  const startEditing = (alarm) => {
+    setEditingId(alarm.id);
+    setNewAlarm({ ...alarm });
+  };
+
+  const saveEdit = () => {
+    setAlarms(prev => prev.map(alarm => 
+      alarm.id === editingId ? { ...newAlarm } : alarm
+    ));
+    setEditingId(null);
+    setNewAlarm({
+      time: '',
+      label: '',
+      days: [],
+      snooze: 5,
+      enabled: true,
+      sound: 'default'
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setNewAlarm({
+      time: '',
+      label: '',
+      days: [],
+      snooze: 5,
+      enabled: true,
+      sound: 'default'
+    });
+  };
+
+  const toggleDay = (day) => {
+    setNewAlarm(prev => ({
+      ...prev,
+      days: prev.days.includes(day) 
+        ? prev.days.filter(d => d !== day)
+        : [...prev.days, day]
+    }));
+  };
+
+  const formatDays = (days) => {
+    if (days.length === 0) return 'Once';
+    if (days.length === 7) return 'Every day';
+    return days.map(day => daysOfWeek.find(d => d.key === day)?.label).join(', ');
+  };
+
+  const containerStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.5rem',
+    padding: '2rem',
+    backgroundColor: isDark ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    borderRadius: '20px',
+    backdropFilter: 'blur(10px)',
+    boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(31, 38, 135, 0.37)',
+    border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.18)'}`,
+    color: isDark ? '#ffffff' : '#333333',
+    minWidth: '500px',
+    maxWidth: '600px',
+    maxHeight: '80vh',
+    overflowY: 'auto',
+    transition: 'all 0.3s ease'
+  };
+
+  const headerStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '1rem'
+  };
+
+  const buttonStyle = (variant = 'primary', size = 'medium') => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    padding: size === 'small' ? '0.5rem 1rem' : '0.75rem 1.5rem',
+    borderRadius: '12px',
+    border: 'none',
+    fontSize: size === 'small' ? '0.9rem' : '1rem',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    backgroundColor: variant === 'primary' 
+      ? (isDark ? '#4ecdc4' : '#667eea')
+      : variant === 'danger'
+      ? (isDark ? '#ff6b6b' : '#e74c3c')
+      : variant === 'success'
+      ? (isDark ? '#51cf66' : '#38a169')
+      : (isDark ? '#4a5568' : '#718096'),
+    color: '#ffffff',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+  });
+
+  const alarmItemStyle = (enabled) => ({
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '1.5rem',
+    borderRadius: '12px',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+    border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+    opacity: enabled ? 1 : 0.6,
+    transition: 'all 0.3s ease'
+  });
+
+  const inputStyle = {
+    padding: '0.75rem',
+    borderRadius: '8px',
+    border: `2px solid ${isDark ? '#4a5568' : '#e2e8f0'}`,
+    backgroundColor: isDark ? '#2d3748' : '#ffffff',
+    color: isDark ? '#ffffff' : '#333333',
+    fontSize: '1rem',
+    outline: 'none',
+    transition: 'all 0.3s ease',
+    width: '100%'
+  };
+
+  const formStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+    padding: '1.5rem',
+    borderRadius: '12px',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+    border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+  };
+
+  const dayButtonStyle = (selected) => ({
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    border: 'none',
+    fontSize: '0.9rem',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    backgroundColor: selected 
+      ? (isDark ? '#4ecdc4' : '#667eea')
+      : (isDark ? '#4a5568' : '#e2e8f0'),
+    color: selected ? '#ffffff' : (isDark ? '#ffffff' : '#333333')
+  });
+
+  return (
+    <div style={containerStyle}>
+      <div style={headerStyle}>
+        <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Alarms</h2>
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          style={buttonStyle('primary', 'small')}
+        >
+          <Plus size={16} />
+          Add Alarm
+        </button>
+      </div>
+
+      {showAddForm && (
+        <div style={formStyle}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Time
+            </label>
+            <input
+              type="time"
+              value={newAlarm.time}
+              onChange={(e) => setNewAlarm(prev => ({ ...prev, time: e.target.value }))}
+              style={inputStyle}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Label
+            </label>
+            <input
+              type="text"
+              placeholder="Wake up, Meeting, etc."
+              value={newAlarm.label}
+              onChange={(e) => setNewAlarm(prev => ({ ...prev, label: e.target.value }))}
+              style={inputStyle}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Repeat Days
+            </label>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+              {daysOfWeek.map(day => (
+                <button
+                  key={day.key}
+                  onClick={() => toggleDay(day.key)}
+                  style={dayButtonStyle(newAlarm.days.includes(day.key))}
+                >
+                  {day.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Snooze (minutes)
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="60"
+                value={newAlarm.snooze}
+                onChange={(e) => setNewAlarm(prev => ({ ...prev, snooze: parseInt(e.target.value) || 5 }))}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Sound
+              </label>
+              <select
+                value={newAlarm.sound}
+                onChange={(e) => setNewAlarm(prev => ({ ...prev, sound: e.target.value }))}
+                style={inputStyle}
+              >
+                {soundOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => setShowAddForm(false)}
+              style={buttonStyle('secondary', 'small')}
+            >
+              <X size={16} />
+              Cancel
+            </button>
+            <button
+              onClick={addAlarm}
+              style={buttonStyle('success', 'small')}
+              disabled={!newAlarm.time}
+            >
+              <Save size={16} />
+              Save
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {alarms.length === 0 ? (
+          <div style={{
+            textAlign: 'center',
+            padding: '2rem',
+            opacity: 0.6,
+            fontSize: '1.1rem'
+          }}>
+            No alarms set. Click "Add Alarm" to create one.
+          </div>
+        ) : (
+          alarms.map(alarm => (
+            <div key={alarm.id} style={alarmItemStyle(alarm.enabled)}>
+              {editingId === alarm.id ? (
+                <div style={{ ...formStyle, width: '100%', margin: 0 }}>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <input
+                      type="time"
+                      value={newAlarm.time}
+                      onChange={(e) => setNewAlarm(prev => ({ ...prev, time: e.target.value }))}
+                      style={{ ...inputStyle, width: '150px' }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Label"
+                      value={newAlarm.label}
+                      onChange={(e) => setNewAlarm(prev => ({ ...prev, label: e.target.value }))}
+                      style={inputStyle}
+                    />
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                    {daysOfWeek.map(day => (
+                      <button
+                        key={day.key}
+                        onClick={() => toggleDay(day.key)}
+                        style={dayButtonStyle(newAlarm.days.includes(day.key))}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={cancelEdit}
+                      style={buttonStyle('secondary', 'small')}
+                    >
+                      <X size={16} />
+                      Cancel
+                    </button>
+                    <button
+                      onClick={saveEdit}
+                      style={buttonStyle('success', 'small')}
+                    >
+                      <Save size={16} />
+                      Save
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <button
+                      onClick={() => toggleAlarm(alarm.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: alarm.enabled ? (isDark ? '#4ecdc4' : '#667eea') : (isDark ? '#666' : '#999'),
+                        cursor: 'pointer',
+                        padding: '0.5rem'
+                      }}
+                    >
+                      {alarm.enabled ? <Bell size={24} /> : <BellOff size={24} />}
+                    </button>
+                    
+                    <div>
+                      <div style={{ fontSize: '1.8rem', fontWeight: 'bold', fontFamily: 'monospace' }}>
+                        {alarm.time}
+                      </div>
+                      <div style={{ fontSize: '0.9rem', opacity: 0.7 }}>
+                        {alarm.label || 'Untitled'} • {formatDays(alarm.days)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => startEditing(alarm)}
+                      style={buttonStyle('secondary', 'small')}
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => deleteAlarm(alarm.id)}
+                      style={buttonStyle('danger', 'small')}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {alarms.length > 0 && (
+        <div style={{
+          fontSize: '0.8rem',
+          opacity: 0.6,
+          textAlign: 'center',
+          padding: '1rem',
+          borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+        }}>
+          <Volume2 size={16} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
+          Make sure your device volume is on and notifications are enabled for the best alarm experience.
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Alarm;
+
+
+
+
+
+
+
+src/App.jsx
+import React, { useState } from 'react';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import Clock from './components/Clock';
+import Timer from './components/Timer';
+import Stopwatch from './components/Stopwatch';
+import Alarm from './components/Alarm';
+import { Sun, Moon, Clock as ClockIcon, Timer as TimerIcon, Stopwatch as StopwatchIcon, Bell } from 'lucide-react';
+import './App.css';
+
+const AppContent = () => {
+  const [activeTab, setActiveTab] = useState('clock');
+  const { isDark, toggleTheme } = useTheme();
+
+  const containerStyle = {
+    minHeight: '100vh',
+    padding: '2rem',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '2rem',
+    background: isDark 
+      ? 'linear-gradient(135deg, #232526 0%, #414345 100%)'
+      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    transition: 'all 0.3s ease',
+    fontFamily: 'Inter, system-ui, Avenir, Helvetica, Arial, sans-serif'
+  };
+
+  const headerStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    maxWidth: '800px',
+    marginBottom: '1rem'
+  };
+
+  const titleStyle = {
+    fontSize: '2.5rem',
+    fontWeight: '700',
+    background: `linear-gradient(45deg, ${isDark ? '#ff6b6b' : '#ffffff'}, ${isDark ? '#4ecdc4' : '#f0f0f0'})`,
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    margin: 0,
+    textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+  };
+
+  const themeButtonStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '50px',
+    height: '50px',
+    borderRadius: '50%',
+    border: 'none',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)',
+    color: isDark ? '#ffffff' : '#ffffff',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    backdropFilter: 'blur(10px)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+    ':hover': {
+      transform: 'scale(1.1)',
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.3)'
+    }
+  };
+
+  const navStyle = {
+    display: 'flex',
+    gap: '0.5rem',
+    padding: '0.5rem',
+    borderRadius: '16px',
+    backgroundColor: isDark ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    backdropFilter: 'blur(10px)',
+    boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(31, 38, 135, 0.37)',
+    border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.18)'}`,
+    marginBottom: '2rem'
+  };
+
+  const tabButtonStyle = (isActive) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.75rem 1.5rem',
+    borderRadius: '12px',
+    border: 'none',
+    fontSize: '1rem',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    backgroundColor: isActive 
+      ? (isDark ? '#4ecdc4' : '#667eea')
+      : 'transparent',
+    color: isActive 
+      ? '#ffffff'
+      : (isDark ? '#ffffff' : '#333333'),
+    boxShadow: isActive ? '0 4px 12px rgba(0, 0, 0, 0.15)' : 'none',
+    transform: isActive ? 'translateY(-1px)' : 'translateY(0)',
+    opacity: isActive ? 1 : 0.7,
+    ':hover': {
+      opacity: 1,
+      backgroundColor: isActive 
+        ? (isDark ? '#4ecdc4' : '#667eea')
+        : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)')
+    }
+  });
+
+  const contentStyle = {
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: (This is where you pick it up) Continue here...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
