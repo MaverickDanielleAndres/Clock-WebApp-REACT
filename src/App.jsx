@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ThemeProvider, useTheme } from './contexts/ThemeContext'
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import Clock from './components/Clock';
 import Timer from './components/Timer';
 import Stopwatch from './components/Stopwatch';
